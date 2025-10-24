@@ -2,7 +2,7 @@
 Content models: Themes, BookAuthors, Books.
 Core content structure for organizing lessons.
 """
-from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.base import TimestampMixin
@@ -14,7 +14,7 @@ class Theme(Base, TimestampMixin):
     __tablename__ = "themes"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)  # 'Акыда', 'Сира', 'Фикх'
+    name = Column(String(255), nullable=False, unique=True)  # 'Акыда', 'Сира', 'Фикх'
     description = Column(Text, nullable=True)
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
@@ -34,7 +34,7 @@ class BookAuthor(Base, TimestampMixin):
     __tablename__ = "book_authors"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)  # 'Мухаммад ибн Абдуль-Ваххаб'
+    name = Column(String(255), nullable=False, unique=True)  # 'Мухаммад ибн Абдуль-Ваххаб'
     biography = Column(Text, nullable=True)
     birth_year = Column(Integer, nullable=True)
     death_year = Column(Integer, nullable=True)
@@ -59,6 +59,11 @@ class Book(Base, TimestampMixin):
     author_id = Column(Integer, ForeignKey("book_authors.id", ondelete="SET NULL"), nullable=True, index=True)
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
+
+    # Unique constraint: book name must be unique per author
+    __table_args__ = (
+        UniqueConstraint('name', 'author_id', name='unique_book_per_author'),
+    )
 
     # Relationships
     theme = relationship("Theme", back_populates="books")

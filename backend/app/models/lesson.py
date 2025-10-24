@@ -14,7 +14,7 @@ class LessonTeacher(Base, TimestampMixin):
     __tablename__ = "lesson_teachers"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)  # 'Мухаммад Абу Мунира'
+    name = Column(String(255), nullable=False, unique=True)  # 'Мухаммад Абу Мунира'
     biography = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
 
