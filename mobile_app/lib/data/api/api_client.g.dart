@@ -123,9 +123,10 @@ class _ApiClient implements ApiClient {
   }
 
   @override
-  Future<List<AppThemeModel>> getThemes() async {
+  Future<List<AppThemeModel>> getThemes({String? search}) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'search': search};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<AppThemeModel>>(Options(
@@ -287,9 +288,18 @@ class _ApiClient implements ApiClient {
   }
 
   @override
-  Future<List<BookModel>> getBooks() async {
+  Future<List<BookModel>> getBooks({
+    String? search,
+    int? themeId,
+    int? authorId,
+  }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'search': search,
+      r'theme_id': themeId,
+      r'author_id': authorId,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<BookModel>>(Options(
@@ -451,9 +461,22 @@ class _ApiClient implements ApiClient {
   }
 
   @override
-  Future<List<BookAuthorModel>> getBookAuthors() async {
+  Future<List<BookAuthorModel>> getBookAuthors({
+    String? search,
+    int? birthYearFrom,
+    int? birthYearTo,
+    int? deathYearFrom,
+    int? deathYearTo,
+  }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'search': search,
+      r'birth_year_from': birthYearFrom,
+      r'birth_year_to': birthYearTo,
+      r'death_year_from': deathYearFrom,
+      r'death_year_to': deathYearTo,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<BookAuthorModel>>(Options(

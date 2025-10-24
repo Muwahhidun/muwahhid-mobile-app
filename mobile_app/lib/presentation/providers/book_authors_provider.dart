@@ -8,22 +8,42 @@ class BookAuthorsState {
   final List<BookAuthorModel> authors;
   final bool isLoading;
   final String? error;
+  final String? searchQuery;
+  final int? birthYearFrom;
+  final int? birthYearTo;
+  final int? deathYearFrom;
+  final int? deathYearTo;
 
   BookAuthorsState({
     this.authors = const [],
     this.isLoading = false,
     this.error,
+    this.searchQuery,
+    this.birthYearFrom,
+    this.birthYearTo,
+    this.deathYearFrom,
+    this.deathYearTo,
   });
 
   BookAuthorsState copyWith({
     List<BookAuthorModel>? authors,
     bool? isLoading,
     String? error,
+    String? searchQuery,
+    int? birthYearFrom,
+    int? birthYearTo,
+    int? deathYearFrom,
+    int? deathYearTo,
   }) {
     return BookAuthorsState(
       authors: authors ?? this.authors,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      searchQuery: searchQuery ?? this.searchQuery,
+      birthYearFrom: birthYearFrom ?? this.birthYearFrom,
+      birthYearTo: birthYearTo ?? this.birthYearTo,
+      deathYearFrom: deathYearFrom ?? this.deathYearFrom,
+      deathYearTo: deathYearTo ?? this.deathYearTo,
     );
   }
 }
@@ -36,11 +56,33 @@ class BookAuthorsNotifier extends StateNotifier<BookAuthorsState> {
     loadAuthors();
   }
 
-  /// Load all book authors
-  Future<void> loadAuthors() async {
+  /// Load all book authors with current filters
+  Future<void> loadAuthors({
+    String? search,
+    int? birthYearFrom,
+    int? birthYearTo,
+    int? deathYearFrom,
+    int? deathYearTo,
+  }) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
-      final authors = await _apiClient.getBookAuthors();
+      state = state.copyWith(
+        isLoading: true,
+        error: null,
+        searchQuery: search,
+        birthYearFrom: birthYearFrom,
+        birthYearTo: birthYearTo,
+        deathYearFrom: deathYearFrom,
+        deathYearTo: deathYearTo,
+      );
+
+      final authors = await _apiClient.getBookAuthors(
+        search: search,
+        birthYearFrom: birthYearFrom,
+        birthYearTo: birthYearTo,
+        deathYearFrom: deathYearFrom,
+        deathYearTo: deathYearTo,
+      );
+
       state = state.copyWith(
         authors: authors,
         isLoading: false,
@@ -53,9 +95,53 @@ class BookAuthorsNotifier extends StateNotifier<BookAuthorsState> {
     }
   }
 
-  /// Refresh authors
-  Future<void> refresh() async {
+  /// Search authors
+  Future<void> search(String query) async {
+    await loadAuthors(
+      search: query.isEmpty ? null : query,
+      birthYearFrom: state.birthYearFrom,
+      birthYearTo: state.birthYearTo,
+      deathYearFrom: state.deathYearFrom,
+      deathYearTo: state.deathYearTo,
+    );
+  }
+
+  /// Filter by birth year range
+  Future<void> filterByBirthYear(int? from, int? to) async {
+    await loadAuthors(
+      search: state.searchQuery,
+      birthYearFrom: from,
+      birthYearTo: to,
+      deathYearFrom: state.deathYearFrom,
+      deathYearTo: state.deathYearTo,
+    );
+  }
+
+  /// Filter by death year range
+  Future<void> filterByDeathYear(int? from, int? to) async {
+    await loadAuthors(
+      search: state.searchQuery,
+      birthYearFrom: state.birthYearFrom,
+      birthYearTo: state.birthYearTo,
+      deathYearFrom: from,
+      deathYearTo: to,
+    );
+  }
+
+  /// Clear all filters
+  Future<void> clearFilters() async {
     await loadAuthors();
+  }
+
+  /// Refresh authors with current filters
+  Future<void> refresh() async {
+    await loadAuthors(
+      search: state.searchQuery,
+      birthYearFrom: state.birthYearFrom,
+      birthYearTo: state.birthYearTo,
+      deathYearFrom: state.deathYearFrom,
+      deathYearTo: state.deathYearTo,
+    );
   }
 }
 

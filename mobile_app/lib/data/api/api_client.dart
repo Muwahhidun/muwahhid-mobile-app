@@ -70,7 +70,13 @@ abstract class ApiClient {
 
   // Book Authors endpoints
   @GET('/book-authors')
-  Future<List<BookAuthorModel>> getBookAuthors();
+  Future<List<BookAuthorModel>> getBookAuthors({
+    @Query('search') String? search,
+    @Query('birth_year_from') int? birthYearFrom,
+    @Query('birth_year_to') int? birthYearTo,
+    @Query('death_year_from') int? deathYearFrom,
+    @Query('death_year_to') int? deathYearTo,
+  });
 
   @GET('/book-authors/{id}')
   Future<BookAuthorModel> getBookAuthor(@Path('id') int id);

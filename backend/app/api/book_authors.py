@@ -1,8 +1,8 @@
 """
 Book Authors API endpoints.
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -25,13 +25,34 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
 
 
 @router.get("", response_model=List[BookAuthorResponse])
-async def get_authors(db: AsyncSession = Depends(get_db)):
+async def get_authors(
+    search: Optional[str] = Query(None, description="Search by name or biography"),
+    birth_year_from: Optional[int] = Query(None, description="Filter by birth year from"),
+    birth_year_to: Optional[int] = Query(None, description="Filter by birth year to"),
+    death_year_from: Optional[int] = Query(None, description="Filter by death year from"),
+    death_year_to: Optional[int] = Query(None, description="Filter by death year to"),
+    db: AsyncSession = Depends(get_db)
+):
     """
-    Get all active book authors.
+    Get all active book authors with optional search and filters.
+
+    Args:
+        search: Search by name or biography
+        birth_year_from: Filter by birth year from (inclusive)
+        birth_year_to: Filter by birth year to (inclusive)
+        death_year_from: Filter by death year from (inclusive)
+        death_year_to: Filter by death year to (inclusive)
 
     Returns list of book authors ordered by name.
     """
-    authors = await author_crud.get_all_authors(db)
+    authors = await author_crud.get_all_authors(
+        db,
+        search=search,
+        birth_year_from=birth_year_from,
+        birth_year_to=birth_year_to,
+        death_year_from=death_year_from,
+        death_year_to=death_year_to
+    )
     return authors
 
 

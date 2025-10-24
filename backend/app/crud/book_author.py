@@ -3,27 +3,60 @@ CRUD operations for BookAuthor model.
 """
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from app.models import BookAuthor
 from app.schemas.content import BookAuthorCreate, BookAuthorUpdate
 
 
-async def get_all_authors(db: AsyncSession) -> List[BookAuthor]:
+async def get_all_authors(
+    db: AsyncSession,
+    search: Optional[str] = None,
+    birth_year_from: Optional[int] = None,
+    birth_year_to: Optional[int] = None,
+    death_year_from: Optional[int] = None,
+    death_year_to: Optional[int] = None
+) -> List[BookAuthor]:
     """
-    Get all active book authors.
+    Get all active book authors with optional search and filters.
 
     Args:
         db: Database session
+        search: Search by name or biography
+        birth_year_from: Filter by birth year from (inclusive)
+        birth_year_to: Filter by birth year to (inclusive)
+        death_year_from: Filter by death year from (inclusive)
+        death_year_to: Filter by death year to (inclusive)
 
     Returns:
         List of BookAuthor objects
     """
-    result = await db.execute(
-        select(BookAuthor)
-        .where(BookAuthor.is_active == True)
-        .order_by(BookAuthor.name)
-    )
+    query = select(BookAuthor).where(BookAuthor.is_active == True)
+
+    # Apply search filter
+    if search:
+        search_term = f"%{search}%"
+        query = query.where(
+            or_(
+                BookAuthor.name.ilike(search_term),
+                BookAuthor.biography.ilike(search_term)
+            )
+        )
+
+    # Apply birth year filters
+    if birth_year_from is not None:
+        query = query.where(BookAuthor.birth_year >= birth_year_from)
+    if birth_year_to is not None:
+        query = query.where(BookAuthor.birth_year <= birth_year_to)
+
+    # Apply death year filters
+    if death_year_from is not None:
+        query = query.where(BookAuthor.death_year >= death_year_from)
+    if death_year_to is not None:
+        query = query.where(BookAuthor.death_year <= death_year_to)
+
+    query = query.order_by(BookAuthor.name)
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 

@@ -16,6 +16,22 @@ class BookAuthorsManagementScreen extends ConsumerStatefulWidget {
 
 class _BookAuthorsManagementScreenState
     extends ConsumerState<BookAuthorsManagementScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _birthYearFromController = TextEditingController();
+  final TextEditingController _birthYearToController = TextEditingController();
+  final TextEditingController _deathYearFromController = TextEditingController();
+  final TextEditingController _deathYearToController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _birthYearFromController.dispose();
+    _birthYearToController.dispose();
+    _deathYearFromController.dispose();
+    _deathYearToController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authorsState = ref.watch(bookAuthorsProvider);
@@ -30,85 +46,275 @@ class _BookAuthorsManagementScreenState
           ),
         ],
       ),
-      body: authorsState.isLoading && authorsState.authors.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : authorsState.error != null
-              ? Center(
+      body: Column(
+        children: [
+          // Search field
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Поиск по имени или биографии',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          ref.read(bookAuthorsProvider.notifier).search('');
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {}); // Update to show/hide clear button
+                ref.read(bookAuthorsProvider.notifier).search(value);
+              },
+            ),
+          ),
+          // Year filters
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                // Birth year filters
+                Expanded(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Ошибка: ${authorsState.error}'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () =>
-                            ref.read(bookAuthorsProvider.notifier).refresh(),
-                        child: const Text('Повторить'),
+                      Text('Год рождения',
+                          style: Theme.of(context).textTheme.bodySmall),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _birthYearFromController,
+                              decoration: const InputDecoration(
+                                labelText: 'От',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              onChanged: (value) {
+                                final from = value.isEmpty ? null : int.tryParse(value);
+                                final to = _birthYearToController.text.isEmpty
+                                    ? null
+                                    : int.tryParse(_birthYearToController.text);
+                                ref
+                                    .read(bookAuthorsProvider.notifier)
+                                    .filterByBirthYear(from, to);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: _birthYearToController,
+                              decoration: const InputDecoration(
+                                labelText: 'До',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              onChanged: (value) {
+                                final from = _birthYearFromController.text.isEmpty
+                                    ? null
+                                    : int.tryParse(_birthYearFromController.text);
+                                final to = value.isEmpty ? null : int.tryParse(value);
+                                ref
+                                    .read(bookAuthorsProvider.notifier)
+                                    .filterByBirthYear(from, to);
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                )
-              : authorsState.authors.isEmpty
-                  ? const Center(child: Text('Нет авторов'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: authorsState.authors.length,
-                      itemBuilder: (context, index) {
-                        final author = authorsState.authors[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            title: Text(
-                              author.name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (author.biography != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(author.biography!),
-                                ],
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${author.birthYear != null ? "${author.birthYear}" : "?"} - ${author.deathYear != null ? "${author.deathYear}" : "?"}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Активен: ${(author.isActive ?? false) ? "Да" : "Нет"}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
+                ),
+                const SizedBox(width: 12),
+                // Death year filters
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Год смерти',
+                          style: Theme.of(context).textTheme.bodySmall),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _deathYearFromController,
+                              decoration: const InputDecoration(
+                                labelText: 'От',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
                               ],
+                              onChanged: (value) {
+                                final from = value.isEmpty ? null : int.tryParse(value);
+                                final to = _deathYearToController.text.isEmpty
+                                    ? null
+                                    : int.tryParse(_deathYearToController.text);
+                                ref
+                                    .read(bookAuthorsProvider.notifier)
+                                    .filterByDeathYear(from, to);
+                              },
                             ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon:
-                                      const Icon(Icons.edit, color: Colors.blue),
-                                  onPressed: () =>
-                                      _showAuthorDialog(context, author: author),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
-                                  onPressed: () =>
-                                      _confirmDelete(context, author),
-                                ),
-                              ],
-                            ),
-                            isThreeLine: true,
                           ),
-                        );
-                      },
-                    ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: _deathYearToController,
+                              decoration: const InputDecoration(
+                                labelText: 'До',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              onChanged: (value) {
+                                final from = _deathYearFromController.text.isEmpty
+                                    ? null
+                                    : int.tryParse(_deathYearFromController.text);
+                                final to = value.isEmpty ? null : int.tryParse(value);
+                                ref
+                                    .read(bookAuthorsProvider.notifier)
+                                    .filterByDeathYear(from, to);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Clear filters button
+                Padding(
+                  padding: const EdgeInsets.only(top: 20),
+                  child: IconButton(
+                    icon: const Icon(Icons.clear_all),
+                    tooltip: 'Очистить фильтры',
+                    onPressed: () {
+                      _searchController.clear();
+                      _birthYearFromController.clear();
+                      _birthYearToController.clear();
+                      _deathYearFromController.clear();
+                      _deathYearToController.clear();
+                      ref.read(bookAuthorsProvider.notifier).clearFilters();
+                      setState(() {});
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // List
+          Expanded(
+            child: authorsState.isLoading && authorsState.authors.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : authorsState.error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Ошибка: ${authorsState.error}'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () =>
+                                  ref.read(bookAuthorsProvider.notifier).refresh(),
+                              child: const Text('Повторить'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : authorsState.authors.isEmpty
+                        ? const Center(child: Text('Нет авторов'))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: authorsState.authors.length,
+                            itemBuilder: (context, index) {
+                              final author = authorsState.authors[index];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: ListTile(
+                                  title: Text(
+                                    author.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (author.biography != null) ...[
+                                        const SizedBox(height: 4),
+                                        Text(author.biography!),
+                                      ],
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${author.birthYear != null ? "${author.birthYear}" : "?"} - ${author.deathYear != null ? "${author.deathYear}" : "?"}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Активен: ${(author.isActive ?? false) ? "Да" : "Нет"}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit,
+                                            color: Colors.blue),
+                                        onPressed: () => _showAuthorDialog(
+                                            context,
+                                            author: author),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete,
+                                            color: Colors.red),
+                                        onPressed: () =>
+                                            _confirmDelete(context, author),
+                                      ),
+                                    ],
+                                  ),
+                                  isThreeLine: true,
+                                ),
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
     );
   }
 
