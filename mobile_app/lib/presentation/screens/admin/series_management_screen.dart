@@ -18,9 +18,22 @@ class SeriesManagementScreen extends ConsumerStatefulWidget {
 
 class _SeriesManagementScreenState
     extends ConsumerState<SeriesManagementScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _yearController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _yearController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final seriesState = ref.watch(seriesProvider);
+    final teachersState = ref.watch(teachersProvider);
+    final booksState = ref.watch(booksProvider);
+    final themesState = ref.watch(themesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -32,80 +45,278 @@ class _SeriesManagementScreenState
           ),
         ],
       ),
-      body: seriesState.isLoading && seriesState.seriesList.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : seriesState.error != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Ошибка: ${seriesState.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () =>
-                        ref.read(seriesProvider.notifier).refresh(),
-                    child: const Text('Повторить'),
+      body: Column(
+        children: [
+          // Search and filters section
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Search field
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    labelText: 'Поиск по названию или описанию',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              ref.read(seriesProvider.notifier).search('');
+                              setState(() {});
+                            },
+                          )
+                        : null,
+                    border: const OutlineInputBorder(),
                   ),
-                ],
-              ),
-            )
-          : seriesState.seriesList.isEmpty
-          ? const Center(child: Text('Нет серий'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: seriesState.seriesList.length,
-              itemBuilder: (context, index) {
-                final series = seriesState.seriesList[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    title: Text(
-                      series.displayName ?? '${series.year} - ${series.name}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (series.description != null) ...[
-                          const SizedBox(height: 4),
-                          Text(series.description!),
+                  onChanged: (value) {
+                    setState(() {});
+                    ref.read(seriesProvider.notifier).search(value);
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Filters row
+                Row(
+                  children: [
+                    // Teacher filter
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        value: seriesState.teacherFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Преподаватель',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('Все'),
+                          ),
+                          ...teachersState.teachers.map((teacher) {
+                            return DropdownMenuItem<int>(
+                              value: teacher.id,
+                              child: Text(teacher.name),
+                            );
+                          }),
                         ],
-                        const SizedBox(height: 4),
-                        if (series.teacher != null)
-                          Text('Преподаватель: ${series.teacher!.name}'),
-                        if (series.book != null)
-                          Text('Книга: ${series.book!.name}'),
-                        if (series.theme != null)
-                          Text('Тема: ${series.theme!.name}'),
-                        // ВРЕМЕННО ЗАКОММЕНТИРОВАНО для отладки
-                        // Text(
-                        //   'Завершена: ${series.isCompleted ? "Да" : "Нет"} | Активна: ${series.isActive ? "Да" : "Нет"}',
-                        //   style: TextStyle(
-                        //     fontSize: 12,
-                        //     color: Colors.grey[600],
-                        //   ),
-                        // ),
-                      ],
+                        onChanged: (value) {
+                          ref.read(seriesProvider.notifier).filterByTeacher(value);
+                        },
+                      ),
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () =>
-                              _showSeriesDialog(context, series: series),
+                    const SizedBox(width: 16),
+
+                    // Book filter
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        value: seriesState.bookFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Книга',
+                          border: OutlineInputBorder(),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _confirmDelete(context, series),
-                        ),
-                      ],
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('Все'),
+                          ),
+                          ...booksState.books.map((book) {
+                            return DropdownMenuItem<int>(
+                              value: book.id,
+                              child: Text(book.name),
+                            );
+                          }),
+                        ],
+                        onChanged: (value) {
+                          ref.read(seriesProvider.notifier).filterByBook(value);
+                        },
+                      ),
                     ),
-                    isThreeLine: true,
-                  ),
-                );
-              },
+                    const SizedBox(width: 16),
+
+                    // Theme filter
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        value: seriesState.themeFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Тема',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('Все'),
+                          ),
+                          ...themesState.themes.map((theme) {
+                            return DropdownMenuItem<int>(
+                              value: theme.id,
+                              child: Text(theme.name),
+                            );
+                          }),
+                        ],
+                        onChanged: (value) {
+                          ref.read(seriesProvider.notifier).filterByTheme(value);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Year and completion filter row
+                Row(
+                  children: [
+                    // Year filter
+                    Expanded(
+                      child: TextField(
+                        controller: _yearController,
+                        decoration: InputDecoration(
+                          labelText: 'Год',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: _yearController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _yearController.clear();
+                                    ref.read(seriesProvider.notifier).filterByYear(null);
+                                    setState(() {});
+                                  },
+                                )
+                              : null,
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          setState(() {});
+                          if (value.isEmpty) {
+                            ref.read(seriesProvider.notifier).filterByYear(null);
+                          } else {
+                            final year = int.tryParse(value);
+                            if (year != null) {
+                              ref.read(seriesProvider.notifier).filterByYear(year);
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Completion filter
+                    Expanded(
+                      child: DropdownButtonFormField<bool>(
+                        value: seriesState.completedFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Статус',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem<bool>(
+                            value: null,
+                            child: Text('Все'),
+                          ),
+                          DropdownMenuItem<bool>(
+                            value: true,
+                            child: Text('Завершённые'),
+                          ),
+                          DropdownMenuItem<bool>(
+                            value: false,
+                            child: Text('Незавершённые'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          ref.read(seriesProvider.notifier).filterByCompleted(value);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Clear filters button
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _searchController.clear();
+                        _yearController.clear();
+                        ref.read(seriesProvider.notifier).clearFilters();
+                        setState(() {});
+                      },
+                      icon: const Icon(Icons.clear_all),
+                      label: const Text('Очистить'),
+                    ),
+                  ],
+                ),
+              ],
             ),
+          ),
+
+          // Series list
+          Expanded(
+            child: seriesState.isLoading && seriesState.seriesList.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : seriesState.error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Ошибка: ${seriesState.error}'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () =>
+                                  ref.read(seriesProvider.notifier).refresh(),
+                              child: const Text('Повторить'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : seriesState.seriesList.isEmpty
+                        ? const Center(child: Text('Нет серий'))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: seriesState.seriesList.length,
+                            itemBuilder: (context, index) {
+                              final series = seriesState.seriesList[index];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: ListTile(
+                                  title: Text(
+                                    series.displayName ?? '${series.year} - ${series.name}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (series.description != null) ...[
+                                        const SizedBox(height: 4),
+                                        Text(series.description!),
+                                      ],
+                                      const SizedBox(height: 4),
+                                      if (series.teacher != null)
+                                        Text('Преподаватель: ${series.teacher!.name}'),
+                                      if (series.book != null)
+                                        Text('Книга: ${series.book!.name}'),
+                                      if (series.theme != null)
+                                        Text('Тема: ${series.theme!.name}'),
+                                    ],
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Colors.blue),
+                                        onPressed: () =>
+                                            _showSeriesDialog(context, series: series),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () => _confirmDelete(context, series),
+                                      ),
+                                    ],
+                                  ),
+                                  isThreeLine: true,
+                                ),
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -8,22 +8,47 @@ class SeriesState {
   final List<SeriesModel> seriesList;
   final bool isLoading;
   final String? error;
+  final String? searchQuery;
+  final int? teacherFilter;
+  final int? bookFilter;
+  final int? themeFilter;
+  final int? yearFilter;
+  final bool? completedFilter;
 
   SeriesState({
     this.seriesList = const [],
     this.isLoading = false,
     this.error,
+    this.searchQuery,
+    this.teacherFilter,
+    this.bookFilter,
+    this.themeFilter,
+    this.yearFilter,
+    this.completedFilter,
   });
 
   SeriesState copyWith({
     List<SeriesModel>? seriesList,
     bool? isLoading,
     String? error,
+    String? searchQuery,
+    int? teacherFilter,
+    int? bookFilter,
+    int? themeFilter,
+    int? yearFilter,
+    bool? completedFilter,
+    bool clearFilters = false,
   }) {
     return SeriesState(
       seriesList: seriesList ?? this.seriesList,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      searchQuery: clearFilters ? null : (searchQuery ?? this.searchQuery),
+      teacherFilter: clearFilters ? null : (teacherFilter ?? this.teacherFilter),
+      bookFilter: clearFilters ? null : (bookFilter ?? this.bookFilter),
+      themeFilter: clearFilters ? null : (themeFilter ?? this.themeFilter),
+      yearFilter: clearFilters ? null : (yearFilter ?? this.yearFilter),
+      completedFilter: clearFilters ? null : (completedFilter ?? this.completedFilter),
     );
   }
 }
@@ -37,31 +62,82 @@ class SeriesNotifier extends StateNotifier<SeriesState> {
   }
 
   /// Load all series
-  Future<void> loadSeries() async {
+  Future<void> loadSeries({
+    String? search,
+    int? teacherId,
+    int? bookId,
+    int? themeId,
+    int? year,
+    bool? isCompleted,
+    bool clearFilters = false,
+  }) async {
     try {
-      print('🔄 SeriesProvider: Starting to load series...');
-      state = state.copyWith(isLoading: true, error: null);
+      state = state.copyWith(
+        isLoading: true,
+        error: null,
+        searchQuery: search,
+        teacherFilter: teacherId,
+        bookFilter: bookId,
+        themeFilter: themeId,
+        yearFilter: year,
+        completedFilter: isCompleted,
+        clearFilters: clearFilters,
+      );
 
-      print('📡 SeriesProvider: Calling API getSeries()...');
-      final series = await _apiClient.getSeries();
-
-      print('✅ SeriesProvider: Got ${series.length} series from API');
-      print('🔍 SeriesProvider: Series data: ${series.map((s) => 'id=${s.id}, isActive=${s.isActive}, isCompleted=${s.isCompleted}').join('; ')}');
+      final series = await _apiClient.getSeries(
+        search: state.searchQuery,
+        teacherId: state.teacherFilter,
+        bookId: state.bookFilter,
+        themeId: state.themeFilter,
+        year: state.yearFilter,
+        isCompleted: state.completedFilter,
+      );
 
       state = state.copyWith(
         seriesList: series,
         isLoading: false,
       );
-      print('✅ SeriesProvider: State updated successfully');
-    } catch (e, stackTrace) {
-      print('❌ SeriesProvider: ERROR CAUGHT!');
-      print('❌ Error: $e');
-      print('❌ StackTrace: $stackTrace');
+    } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
       );
     }
+  }
+
+  /// Search series
+  Future<void> search(String query) async {
+    await loadSeries(search: query.isEmpty ? null : query);
+  }
+
+  /// Filter by teacher
+  Future<void> filterByTeacher(int? teacherId) async {
+    await loadSeries(teacherId: teacherId);
+  }
+
+  /// Filter by book
+  Future<void> filterByBook(int? bookId) async {
+    await loadSeries(bookId: bookId);
+  }
+
+  /// Filter by theme
+  Future<void> filterByTheme(int? themeId) async {
+    await loadSeries(themeId: themeId);
+  }
+
+  /// Filter by year
+  Future<void> filterByYear(int? year) async {
+    await loadSeries(year: year);
+  }
+
+  /// Filter by completion status
+  Future<void> filterByCompleted(bool? isCompleted) async {
+    await loadSeries(isCompleted: isCompleted);
+  }
+
+  /// Clear all filters
+  Future<void> clearFilters() async {
+    await loadSeries(clearFilters: true);
   }
 
   /// Refresh series

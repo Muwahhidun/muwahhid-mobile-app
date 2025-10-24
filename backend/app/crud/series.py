@@ -10,27 +10,69 @@ from app.models import LessonSeries
 from app.schemas.lesson import LessonSeriesCreate, LessonSeriesUpdate
 
 
-async def get_all_series(db: AsyncSession) -> List[LessonSeries]:
+async def get_all_series(
+    db: AsyncSession,
+    search: Optional[str] = None,
+    teacher_id: Optional[int] = None,
+    book_id: Optional[int] = None,
+    theme_id: Optional[int] = None,
+    year: Optional[int] = None,
+    is_completed: Optional[bool] = None
+) -> List[LessonSeries]:
     """
     Get all series with relationships (including inactive for admin panel).
 
     Args:
         db: Database session
+        search: Search by name or description
+        teacher_id: Filter by teacher
+        book_id: Filter by book
+        theme_id: Filter by theme
+        year: Filter by year
+        is_completed: Filter by completion status
 
     Returns:
         List of LessonSeries objects
     """
-    result = await db.execute(
-        select(LessonSeries)
-        # ВРЕМЕННО УБРАН ФИЛЬТР для отладки админ-панели
-        # .where(LessonSeries.is_active == True)
-        .options(
-            selectinload(LessonSeries.teacher),
-            selectinload(LessonSeries.book),
-            selectinload(LessonSeries.theme)
+    from sqlalchemy import or_
+
+    query = select(LessonSeries)
+    # ВРЕМЕННО УБРАН ФИЛЬТР для отладки админ-панели
+    # .where(LessonSeries.is_active == True)
+
+    # Apply search filter
+    if search:
+        search_term = f"%{search}%"
+        query = query.where(
+            or_(
+                LessonSeries.name.ilike(search_term),
+                LessonSeries.description.ilike(search_term)
+            )
         )
-        .order_by(LessonSeries.year.desc(), LessonSeries.order)
-    )
+
+    # Apply other filters
+    if teacher_id is not None:
+        query = query.where(LessonSeries.teacher_id == teacher_id)
+
+    if book_id is not None:
+        query = query.where(LessonSeries.book_id == book_id)
+
+    if theme_id is not None:
+        query = query.where(LessonSeries.theme_id == theme_id)
+
+    if year is not None:
+        query = query.where(LessonSeries.year == year)
+
+    if is_completed is not None:
+        query = query.where(LessonSeries.is_completed == is_completed)
+
+    query = query.options(
+        selectinload(LessonSeries.teacher),
+        selectinload(LessonSeries.book),
+        selectinload(LessonSeries.theme)
+    ).order_by(LessonSeries.year.desc(), LessonSeries.order)
+
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 

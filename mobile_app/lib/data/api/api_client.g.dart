@@ -839,9 +839,24 @@ class _ApiClient implements ApiClient {
   }
 
   @override
-  Future<List<SeriesModel>> getSeries() async {
+  Future<List<SeriesModel>> getSeries({
+    String? search,
+    int? teacherId,
+    int? bookId,
+    int? themeId,
+    int? year,
+    bool? isCompleted,
+  }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'search': search,
+      r'teacher_id': teacherId,
+      r'book_id': bookId,
+      r'theme_id': themeId,
+      r'year': year,
+      r'is_completed': isCompleted,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<SeriesModel>>(Options(

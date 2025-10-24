@@ -1,8 +1,8 @@
 """
 Series API endpoints.
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -33,14 +33,30 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
 
 
 @router.get("", response_model=List[LessonSeriesWithRelations])
-async def get_all_series(db: AsyncSession = Depends(get_db)):
+async def get_all_series(
+    search: Optional[str] = Query(None, description="Search by name or description"),
+    teacher_id: Optional[int] = Query(None, description="Filter by teacher ID"),
+    book_id: Optional[int] = Query(None, description="Filter by book ID"),
+    theme_id: Optional[int] = Query(None, description="Filter by theme ID"),
+    year: Optional[int] = Query(None, description="Filter by year"),
+    is_completed: Optional[bool] = Query(None, description="Filter by completion status"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Get all active series with relationships.
 
     Returns:
         List of series ordered by year (newest first) and order
     """
-    series_list = await series_crud.get_all_series(db)
+    series_list = await series_crud.get_all_series(
+        db,
+        search=search,
+        teacher_id=teacher_id,
+        book_id=book_id,
+        theme_id=theme_id,
+        year=year,
+        is_completed=is_completed
+    )
 
     # Add display_name to each series
     result = []

@@ -116,7 +116,14 @@ abstract class ApiClient {
 
   // Series endpoints
   @GET('/series')
-  Future<List<SeriesModel>> getSeries();
+  Future<List<SeriesModel>> getSeries({
+    @Query('search') String? search,
+    @Query('teacher_id') int? teacherId,
+    @Query('book_id') int? bookId,
+    @Query('theme_id') int? themeId,
+    @Query('year') int? year,
+    @Query('is_completed') bool? isCompleted,
+  });
 
   @GET('/series/{id}')
   Future<SeriesModel> getSeriesById(@Path('id') int id);
