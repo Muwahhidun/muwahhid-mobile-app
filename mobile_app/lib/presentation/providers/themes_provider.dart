@@ -8,22 +8,26 @@ class ThemesState {
   final List<AppThemeModel> themes;
   final bool isLoading;
   final String? error;
+  final String? searchQuery;
 
   ThemesState({
     this.themes = const [],
     this.isLoading = false,
     this.error,
+    this.searchQuery,
   });
 
   ThemesState copyWith({
     List<AppThemeModel>? themes,
     bool? isLoading,
     String? error,
+    String? searchQuery,
   }) {
     return ThemesState(
       themes: themes ?? this.themes,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 }
@@ -36,11 +40,11 @@ class ThemesNotifier extends StateNotifier<ThemesState> {
     loadThemes();
   }
 
-  /// Load all themes
-  Future<void> loadThemes() async {
+  /// Load all themes with optional search
+  Future<void> loadThemes({String? search}) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
-      final themes = await _apiClient.getThemes();
+      state = state.copyWith(isLoading: true, error: null, searchQuery: search);
+      final themes = await _apiClient.getThemes(search: search);
       state = state.copyWith(
         themes: themes,
         isLoading: false,
@@ -53,9 +57,19 @@ class ThemesNotifier extends StateNotifier<ThemesState> {
     }
   }
 
+  /// Search themes
+  Future<void> search(String query) async {
+    await loadThemes(search: query.isEmpty ? null : query);
+  }
+
+  /// Clear search and reload all themes
+  Future<void> clearSearch() async {
+    await loadThemes();
+  }
+
   /// Refresh themes
   Future<void> refresh() async {
-    await loadThemes();
+    await loadThemes(search: state.searchQuery);
   }
 }
 

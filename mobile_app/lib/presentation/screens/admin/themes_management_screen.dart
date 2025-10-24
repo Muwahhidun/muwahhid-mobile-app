@@ -15,6 +15,14 @@ class ThemesManagementScreen extends ConsumerStatefulWidget {
 
 class _ThemesManagementScreenState
     extends ConsumerState<ThemesManagementScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final themesState = ref.watch(themesProvider);
@@ -29,32 +37,61 @@ class _ThemesManagementScreenState
           ),
         ],
       ),
-      body: themesState.isLoading && themesState.themes.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : themesState.error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Ошибка: ${themesState.error}'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => ref.read(themesProvider.notifier).refresh(),
-                        child: const Text('Повторить'),
-                      ),
-                    ],
-                  ),
-                )
-              : themesState.themes.isEmpty
-                  ? const Center(child: Text('Нет тем'))
-                  : ListView.builder(
+      body: Column(
+        children: [
+          // Search field
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Поиск по названию или описанию',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          ref.read(themesProvider.notifier).clearSearch();
+                        },
+                      )
+                    : null,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {}); // Update to show/hide clear button
+                ref.read(themesProvider.notifier).search(value);
+              },
+            ),
+          ),
+          // List
+          Expanded(
+            child: themesState.isLoading && themesState.themes.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : themesState.error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Ошибка: ${themesState.error}'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => ref.read(themesProvider.notifier).refresh(),
+                              child: const Text('Повторить'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : themesState.themes.isEmpty
+                        ? const Center(child: Text('Нет тем'))
+                        : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: themesState.themes.length,
-                      itemBuilder: (context, index) {
-                        final theme = themesState.themes[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
+                            itemBuilder: (context, index) {
+                              final theme = themesState.themes[index];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: ListTile(
                             title: Text(
                               theme.name,
                               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -94,6 +131,9 @@ class _ThemesManagementScreenState
                         );
                       },
                     ),
+          ),
+        ],
+      ),
     );
   }
 
