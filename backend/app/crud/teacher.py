@@ -10,21 +10,35 @@ from app.models import LessonTeacher, LessonSeries, Lesson, Theme, Book
 from app.schemas.lesson import LessonTeacherCreate, LessonTeacherUpdate
 
 
-async def get_all_teachers(db: AsyncSession) -> List[LessonTeacher]:
+async def get_all_teachers(
+    db: AsyncSession,
+    search: Optional[str] = None
+) -> List[LessonTeacher]:
     """
-    Get all active teachers.
+    Get all active teachers with optional search.
 
     Args:
         db: Database session
+        search: Optional search term for name or biography
 
     Returns:
         List of LessonTeacher objects
     """
-    result = await db.execute(
-        select(LessonTeacher)
-        .where(LessonTeacher.is_active == True)
-        .order_by(LessonTeacher.name)
-    )
+    query = select(LessonTeacher).where(LessonTeacher.is_active == True)
+
+    # Apply search filter
+    if search:
+        from sqlalchemy import or_
+        search_term = f"%{search}%"
+        query = query.where(
+            or_(
+                LessonTeacher.name.ilike(search_term),
+                LessonTeacher.biography.ilike(search_term)
+            )
+        )
+
+    query = query.order_by(LessonTeacher.name)
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 

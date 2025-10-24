@@ -95,7 +95,9 @@ abstract class ApiClient {
 
   // Teachers endpoints
   @GET('/teachers')
-  Future<List<TeacherModel>> getTeachers();
+  Future<List<TeacherModel>> getTeachers({
+    @Query('search') String? search,
+  });
 
   @GET('/teachers/{id}')
   Future<TeacherModel> getTeacher(@Path('id') int id);

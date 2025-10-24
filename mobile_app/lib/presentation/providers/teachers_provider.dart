@@ -8,22 +8,27 @@ class TeachersState {
   final List<TeacherModel> teachers;
   final bool isLoading;
   final String? error;
+  final String? searchQuery;
 
   TeachersState({
     this.teachers = const [],
     this.isLoading = false,
     this.error,
+    this.searchQuery,
   });
 
   TeachersState copyWith({
     List<TeacherModel>? teachers,
     bool? isLoading,
     String? error,
+    String? searchQuery,
+    bool clearFilters = false,
   }) {
     return TeachersState(
       teachers: teachers ?? this.teachers,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      searchQuery: clearFilters ? null : (searchQuery ?? this.searchQuery),
     );
   }
 }
@@ -36,11 +41,19 @@ class TeachersNotifier extends StateNotifier<TeachersState> {
     loadTeachers();
   }
 
-  /// Load all teachers
-  Future<void> loadTeachers() async {
+  /// Load all teachers with optional search
+  Future<void> loadTeachers({
+    String? search,
+    bool clearFilters = false,
+  }) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
-      final teachers = await _apiClient.getTeachers();
+      state = state.copyWith(
+        isLoading: true,
+        error: null,
+        searchQuery: search,
+        clearFilters: clearFilters,
+      );
+      final teachers = await _apiClient.getTeachers(search: search);
       state = state.copyWith(
         teachers: teachers,
         isLoading: false,
@@ -53,9 +66,19 @@ class TeachersNotifier extends StateNotifier<TeachersState> {
     }
   }
 
-  /// Refresh teachers
+  /// Search teachers
+  Future<void> search(String query) async {
+    await loadTeachers(search: query.isEmpty ? null : query);
+  }
+
+  /// Clear all filters and search
+  Future<void> clearFilters() async {
+    await loadTeachers(clearFilters: true);
+  }
+
+  /// Refresh teachers with current filters
   Future<void> refresh() async {
-    await loadTeachers();
+    await loadTeachers(search: state.searchQuery);
   }
 }
 

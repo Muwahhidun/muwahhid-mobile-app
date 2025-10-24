@@ -639,9 +639,10 @@ class _ApiClient implements ApiClient {
   }
 
   @override
-  Future<List<TeacherModel>> getTeachers() async {
+  Future<List<TeacherModel>> getTeachers({String? search}) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'search': search};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<TeacherModel>>(Options(

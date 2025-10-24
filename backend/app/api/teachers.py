@@ -1,8 +1,8 @@
 """
 Teachers API endpoints.
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -30,13 +30,16 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
 
 
 @router.get("", response_model=List[LessonTeacherResponse])
-async def get_teachers(db: AsyncSession = Depends(get_db)):
+async def get_teachers(
+    search: Optional[str] = Query(None, description="Search by name or biography"),
+    db: AsyncSession = Depends(get_db)
+):
     """
-    Get all active teachers.
+    Get all active teachers with optional search.
 
     Returns list of teachers ordered by name.
     """
-    teachers = await teacher_crud.get_all_teachers(db)
+    teachers = await teacher_crud.get_all_teachers(db, search=search)
     return teachers
 
 

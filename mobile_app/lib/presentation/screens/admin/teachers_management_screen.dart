@@ -15,6 +15,14 @@ class TeachersManagementScreen extends ConsumerStatefulWidget {
 
 class _TeachersManagementScreenState
     extends ConsumerState<TeachersManagementScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final teachersState = ref.watch(teachersProvider);
@@ -29,7 +37,43 @@ class _TeachersManagementScreenState
           ),
         ],
       ),
-      body: teachersState.isLoading && teachersState.teachers.isEmpty
+      body: Column(
+        children: [
+          // Search field
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      labelText: 'Поиск по имени или биографии',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                ref.read(teachersProvider.notifier).clearFilters();
+                                setState(() {});
+                              },
+                            )
+                          : null,
+                      border: const OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      setState(() {}); // Update to show/hide clear button
+                      ref.read(teachersProvider.notifier).search(value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // List
+          Expanded(
+            child: teachersState.isLoading && teachersState.teachers.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : teachersState.error != null
               ? Center(
@@ -100,6 +144,9 @@ class _TeachersManagementScreenState
                         );
                       },
                     ),
+          ),
+        ],
+      ),
     );
   }
 
