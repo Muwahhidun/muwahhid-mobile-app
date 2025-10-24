@@ -14,9 +14,9 @@ SeriesModel _$SeriesModelFromJson(Map<String, dynamic> json) => SeriesModel(
       teacherId: (json['teacher_id'] as num).toInt(),
       bookId: (json['book_id'] as num?)?.toInt(),
       themeId: (json['theme_id'] as num?)?.toInt(),
-      isCompleted: json['is_completed'] as bool? ?? false,
+      isCompleted: json['is_completed'] as bool?,
       order: (json['order'] as num).toInt(),
-      isActive: json['is_active'] as bool? ?? true,
+      isActive: json['is_active'] as bool?,
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String,
       teacher: json['teacher'] == null

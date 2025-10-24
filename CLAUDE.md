@@ -22,6 +22,52 @@ This is a **two-part application**:
 1. **`mobile_app/`** - Flutter frontend (iOS/Android)
 2. **`backend/`** - FastAPI REST API server
 
+### Backend Structure
+
+```
+backend/
+├── app/
+│   ├── api/              # FastAPI route handlers
+│   │   ├── auth.py       # Authentication endpoints
+│   │   ├── lessons.py    # Lesson CRUD + audio streaming
+│   │   ├── series.py     # Series management
+│   │   ├── themes.py     # Theme management
+│   │   ├── teachers.py   # Teacher management
+│   │   ├── books.py      # Book management
+│   │   └── book_authors.py
+│   ├── auth/             # JWT token handling
+│   │   ├── jwt.py        # Token creation/verification
+│   │   └── dependencies.py # Auth dependencies (get_current_user)
+│   ├── crud/             # Database operations
+│   │   ├── user.py
+│   │   ├── lesson.py
+│   │   ├── series.py
+│   │   └── ...
+│   ├── models/           # SQLAlchemy ORM models
+│   │   ├── base.py       # Base model with timestamps
+│   │   ├── user.py
+│   │   ├── content.py    # Theme, BookAuthor, Book
+│   │   ├── lesson.py     # LessonTeacher, LessonSeries, Lesson
+│   │   ├── test.py
+│   │   ├── bookmark.py
+│   │   └── feedback.py
+│   ├── schemas/          # Pydantic schemas for request/response
+│   │   ├── user.py
+│   │   ├── content.py
+│   │   └── lesson.py
+│   ├── utils/            # Utilities
+│   │   └── audio.py      # Audio file utilities
+│   ├── config.py         # Settings from environment variables
+│   ├── database.py       # SQLAlchemy async setup
+│   ├── main.py           # FastAPI app entry point
+│   └── seed.py           # Database seeding script
+├── alembic/              # Database migrations
+│   └── versions/
+├── audio_files/          # Audio file storage (not in git)
+├── requirements.txt
+└── alembic.ini
+```
+
 ### Database Model
 
 The PostgreSQL schema defines the following key relationships:
@@ -31,11 +77,20 @@ The PostgreSQL schema defines the following key relationships:
 - **Tests:** Linked to lesson_series, with test_questions and test_attempts tracking user progress
 - **Bookmarks:** Max 20 per user, unique per user/lesson combination
 
-**Critical CASCADE rules:**
-- Deleting a lesson_series is **RESTRICTED** if it has lessons or tests
-- Deleting a user **CASCADES** to all their bookmarks, test_attempts, feedbacks
-- Deleting a lesson **CASCADES** to bookmarks and test_questions
+**Critical CASCADE and CONSTRAINT rules:**
+- Deleting a `lesson_series` is **RESTRICTED** if it has lessons or tests
+- Deleting a `lesson_teacher` is **RESTRICTED** if they have series
+- Deleting a `user` **CASCADES** to all their bookmarks, test_attempts, feedbacks
+- Deleting a `lesson` **CASCADES** to bookmarks and test_questions
 - Theme/BookAuthor/Book deletions **SET NULL** on related records
+- **UNIQUE constraints:**
+  - Series: unique per `(year, name, teacher_id)`
+  - Lesson: unique `lesson_number` per series
+  - Bookmark: unique per `(user_id, lesson_id)`
+
+**Boolean fields with defaults:**
+- `is_active` (default: `True`) - All content entities
+- `is_completed` (default: `False`) - LessonSeries only
 
 ### Redis Caching Strategy
 
@@ -57,7 +112,7 @@ Audio files are served via FastAPI with **Range request support** (HTTP 206 Part
 
 ### Backend (FastAPI)
 
-Assuming standard Python FastAPI setup in `backend/`:
+Commands run from `backend/` directory:
 
 ```bash
 # Install dependencies
@@ -66,17 +121,31 @@ pip install -r requirements.txt
 # Run development server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Run with Docker Compose (includes PostgreSQL and Redis)
-docker-compose up -d
+# Database migrations
+alembic revision --autogenerate -m "description"  # Create new migration
+alembic upgrade head                               # Apply migrations
+alembic downgrade -1                               # Rollback one migration
+alembic current                                    # Show current migration
+
+# Seed database with test data
+python -m app.seed
+
+# Run API tests
+python test_api.py
+python test_content_api.py
+python test_audio_streaming.py
 ```
 
 ### Frontend (Flutter)
 
-Assuming standard Flutter setup in `mobile_app/`:
+Commands run from `mobile_app/` directory:
 
 ```bash
 # Install dependencies
 flutter pub get
+
+# Generate code (models, providers, API client)
+flutter pub run build_runner build --delete-conflicting-outputs
 
 # Run on iOS simulator
 flutter run -d ios
@@ -93,6 +162,9 @@ flutter test
 
 # Analyze code
 flutter analyze
+
+# Clean build artifacts
+flutter clean
 ```
 
 ## Key Implementation Notes
@@ -123,35 +195,60 @@ Lessons API includes nested relationship data to minimize round-trips:
 }
 ```
 
-### Flutter State Management
+### Flutter Architecture
 
-Use **Riverpod** for state management. Key providers needed:
-- `authProvider` - JWT tokens, current user
-- `lessonsProvider` - Lessons list with filters
-- `playerProvider` - Audio player state (position, playing, playlist)
-- `bookmarksProvider` - User bookmarks (max 20)
+The mobile app follows a **layered architecture**:
 
-### Audio Player Requirements
+```
+lib/
+├── config/           # API configuration and constants
+├── core/             # Theme, utilities
+├── data/
+│   ├── api/          # Retrofit API client, Dio provider
+│   └── models/       # JSON-serializable data models
+└── presentation/
+    ├── providers/    # Riverpod state providers
+    └── screens/      # UI screens (auth, admin, themes, etc.)
+```
+
+**State Management (Riverpod):**
+- `authProvider` - JWT tokens, current user, authentication state
+- `themesProvider` - Themes list (cached)
+- `teachersProvider` - Teachers list (cached)
+- `seriesProvider` - Series list with filters
+- `booksProvider` - Books list
+- `bookAuthorsProvider` - Book authors list
+
+**Code Generation:**
+- Models use `json_serializable` for JSON serialization
+- API client uses `retrofit` for type-safe HTTP requests
+- Run `flutter pub run build_runner build --delete-conflicting-outputs` after modifying models or API definitions
+
+### Audio Player (Future Implementation)
+
+Audio player with `just_audio` and `audio_service` is not yet implemented. When implementing:
 
 - Background playback via `audio_service`
 - Lock screen controls
 - Playback speed (0.5x - 2x)
 - Auto-advance to next lesson in series
 - Sleep timer
-- Seek bar with Range requests to backend
+- Seek bar with Range requests to backend (`GET /api/lessons/{id}/audio` with Range header)
 
-### Testing System
+### Testing System (Future Implementation)
 
-Tests are linked to `lesson_series`. Flow:
+Tests will be linked to `lesson_series`. Planned flow:
 1. Start test: `POST /api/tests/{id}/start` creates a `test_attempt`
 2. User answers questions (timer enforced client-side)
 3. Complete test: `POST /api/tests/attempts/{id}/complete` calculates score
 4. `passed` is true if `score / max_score >= passing_score` percentage
 5. Users can retake tests unlimited times
 
-### Offline Mode (Optional)
+Database models exist in `backend/app/models/test.py` but API endpoints not yet implemented.
 
-Use **Hive** or **sqflite** to cache:
+### Offline Mode (Future Implementation)
+
+Use **Hive** (already in pubspec.yaml) or **sqflite** to cache:
 - Themes, teachers, series metadata
 - User's bookmarks
 - Optionally: downloaded audio files
@@ -169,37 +266,87 @@ Display to users as: "Урок {lesson_number}"
 
 ## Environment Configuration
 
-Backend requires `.env` file:
+### Backend `.env` file
+
+Located in `backend/.env`:
+
 ```env
+# Database
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost/audio_bot
+
+# Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_CACHE_DB=0
 REDIS_SESSION_DB=1
 REDIS_PASSWORD=your_password
-JWT_SECRET=your_secret
+
+# JWT
+JWT_SECRET_KEY=your_secret_key_here
+
+# Application
+DEBUG=True
+API_V1_PREFIX=/api
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+
+# Audio
+AUDIO_FILES_PATH=/app/audio_files
 ```
 
-Mobile app requires `lib/config/api_config.dart`:
+### Mobile App Configuration
+
+Update `mobile_app/lib/config/api_config.dart` to point to your backend:
+
 ```dart
-const String API_BASE_URL = "https://api.example.com";
+class ApiConfig {
+  static const String baseUrl = 'http://localhost:8000';  // Change for production
+  static const String apiPrefix = '/api';
+  // ...
+}
 ```
 
-## MVP Priority
+## Current Implementation Status
 
-**Must have (P1):**
-- Registration/Login
-- Browse themes, teachers, series, lessons
+**Implemented (Backend + Mobile):**
+- User registration and authentication (JWT)
+- Admin panel screens (themes, books, authors, teachers, series management)
+- CRUD operations for all content entities
+- Database migrations with Alembic
+- Basic Flutter app structure with Riverpod
+
+**Partially Implemented:**
+- API endpoints exist but mobile screens incomplete:
+  - Lessons browsing
+  - User-facing content viewing
+  - Audio streaming (backend ready, player not implemented)
+
+**Not Yet Implemented:**
 - Audio player with background playback
-- Bookmarks
-- Basic search
-
-**Should have (P2):**
-- Testing system
+- Bookmarks system
+- Testing system (models exist, no endpoints/UI)
+- Search functionality
 - Listening history
-- Feedback/support
-
-**Nice to have (P3):**
 - Offline mode
-- Social features (comments, ratings)
-- Statistics dashboard
+
+## Development Workflow
+
+When working on this codebase:
+
+1. **Backend changes:**
+   - Modify models in `backend/app/models/`
+   - Update CRUD operations in `backend/app/crud/`
+   - Add/modify API endpoints in `backend/app/api/`
+   - Create Pydantic schemas in `backend/app/schemas/`
+   - Generate migration: `alembic revision --autogenerate -m "description"`
+   - Apply migration: `alembic upgrade head`
+
+2. **Mobile changes:**
+   - Add/modify models in `mobile_app/lib/data/models/`
+   - Update API client in `mobile_app/lib/data/api/api_client.dart`
+   - Run code generation: `flutter pub run build_runner build --delete-conflicting-outputs`
+   - Create/update providers in `mobile_app/lib/presentation/providers/`
+   - Build UI in `mobile_app/lib/presentation/screens/`
+
+3. **Testing:**
+   - Backend: Run test scripts in `backend/` directory
+   - Mobile: `flutter test` in `mobile_app/` directory

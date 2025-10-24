@@ -40,7 +40,7 @@ class LessonSeries(Base, TimestampMixin):
     book_id = Column(Integer, ForeignKey("books.id", ondelete="SET NULL"), nullable=True, index=True)
     theme_id = Column(Integer, ForeignKey("themes.id", ondelete="SET NULL"), nullable=True, index=True)
     is_completed = Column(Boolean, default=False, nullable=False, index=True)
-    order = Column(Integer, default=0)
+    order = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
 
     # Unique constraint: one series per teacher/year/name combination

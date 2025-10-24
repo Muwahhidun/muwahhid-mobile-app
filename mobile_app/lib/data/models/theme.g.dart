@@ -11,7 +11,7 @@ AppThemeModel _$AppThemeModelFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       description: json['description'] as String?,
-      isActive: json['is_active'] as bool,
+      isActive: json['is_active'] as bool?,
       booksCount: (json['books_count'] as num?)?.toInt(),
       seriesCount: (json['series_count'] as num?)?.toInt(),
       lessonsCount: (json['lessons_count'] as num?)?.toInt(),

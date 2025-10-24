@@ -13,9 +13,9 @@ BookAuthorModel _$BookAuthorModelFromJson(Map<String, dynamic> json) =>
       biography: json['biography'] as String?,
       birthYear: (json['birth_year'] as num?)?.toInt(),
       deathYear: (json['death_year'] as num?)?.toInt(),
-      isActive: json['is_active'] as bool,
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
+      isActive: json['is_active'] as bool?,
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
     );
 
 Map<String, dynamic> _$BookAuthorModelToJson(BookAuthorModel instance) =>

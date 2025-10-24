@@ -79,7 +79,7 @@ class _BookAuthorsManagementScreenState
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Активен: ${author.isActive ? "Да" : "Нет"}',
+                                  'Активен: ${(author.isActive ?? false) ? "Да" : "Нет"}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],

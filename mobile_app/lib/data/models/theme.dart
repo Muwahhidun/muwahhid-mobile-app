@@ -9,7 +9,7 @@ class AppThemeModel {
   final String name;
   final String? description;
   @JsonKey(name: 'is_active')
-  final bool isActive;
+  final bool? isActive;
   @JsonKey(name: 'books_count')
   final int? booksCount;
   @JsonKey(name: 'series_count')
@@ -21,7 +21,7 @@ class AppThemeModel {
     required this.id,
     required this.name,
     this.description,
-    required this.isActive,
+    this.isActive,
     this.booksCount,
     this.seriesCount,
     this.lessonsCount,

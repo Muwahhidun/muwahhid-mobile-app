@@ -13,11 +13,11 @@ class BookAuthorModel {
   @JsonKey(name: 'death_year')
   final int? deathYear;
   @JsonKey(name: 'is_active')
-  final bool isActive;
+  final bool? isActive;
   @JsonKey(name: 'created_at')
-  final String createdAt;
+  final String? createdAt;
   @JsonKey(name: 'updated_at')
-  final String updatedAt;
+  final String? updatedAt;
 
   BookAuthorModel({
     required this.id,
@@ -25,9 +25,9 @@ class BookAuthorModel {
     this.biography,
     this.birthYear,
     this.deathYear,
-    required this.isActive,
-    required this.createdAt,
-    required this.updatedAt,
+    this.isActive,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory BookAuthorModel.fromJson(Map<String, dynamic> json) =>

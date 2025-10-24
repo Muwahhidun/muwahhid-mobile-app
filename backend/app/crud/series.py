@@ -12,7 +12,7 @@ from app.schemas.lesson import LessonSeriesCreate, LessonSeriesUpdate
 
 async def get_all_series(db: AsyncSession) -> List[LessonSeries]:
     """
-    Get all active series with relationships.
+    Get all series with relationships (including inactive for admin panel).
 
     Args:
         db: Database session
@@ -22,7 +22,8 @@ async def get_all_series(db: AsyncSession) -> List[LessonSeries]:
     """
     result = await db.execute(
         select(LessonSeries)
-        .where(LessonSeries.is_active == True)
+        # ВРЕМЕННО УБРАН ФИЛЬТР для отладки админ-панели
+        # .where(LessonSeries.is_active == True)
         .options(
             selectinload(LessonSeries.teacher),
             selectinload(LessonSeries.book),

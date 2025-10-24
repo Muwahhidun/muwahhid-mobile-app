@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/book.dart';
-import '../../../data/models/theme.dart';
 import '../../../data/api/api_client.dart';
 import '../../../data/api/dio_provider.dart';
 import '../../providers/books_provider.dart';
@@ -34,93 +33,88 @@ class _BooksManagementScreenState extends ConsumerState<BooksManagementScreen> {
       body: booksState.isLoading && booksState.books.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : booksState.error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Ошибка: ${booksState.error}'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () =>
-                            ref.read(booksProvider.notifier).refresh(),
-                        child: const Text('Повторить'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Ошибка: ${booksState.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.read(booksProvider.notifier).refresh(),
+                    child: const Text('Повторить'),
                   ),
-                )
-              : booksState.books.isEmpty
-                  ? const Center(child: Text('Нет книг'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: booksState.books.length,
-                      itemBuilder: (context, index) {
-                        final book = booksState.books[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            title: Text(
-                              book.name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (book.description != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(book.description!),
-                                ],
-                                if (book.theme != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Тема: ${book.theme!.name}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                                if (book.author != null) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Автор: ${book.author!.name}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Активна: ${book.isActive ? "Да" : "Нет"}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon:
-                                      const Icon(Icons.edit, color: Colors.blue),
-                                  onPressed: () =>
-                                      _showBookDialog(context, book: book),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
-                                  onPressed: () => _confirmDelete(context, book),
-                                ),
-                              ],
-                            ),
-                            isThreeLine: true,
-                          ),
-                        );
-                      },
+                ],
+              ),
+            )
+          : booksState.books.isEmpty
+          ? const Center(child: Text('Нет книг'))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: booksState.books.length,
+              itemBuilder: (context, index) {
+                final book = booksState.books[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    title: Text(
+                      book.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (book.description != null) ...[
+                          const SizedBox(height: 4),
+                          Text(book.description!),
+                        ],
+                        if (book.theme != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Тема: ${book.theme!.name}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                        if (book.author != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Автор: ${book.author!.name}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          'Активна: ${(book.isActive ?? false) ? "Да" : "Нет"}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _showBookDialog(context, book: book),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _confirmDelete(context, book),
+                        ),
+                      ],
+                    ),
+                    isThreeLine: true,
+                  ),
+                );
+              },
+            ),
     );
   }
 
@@ -166,16 +160,16 @@ class _BooksManagementScreenState extends ConsumerState<BooksManagementScreen> {
       await apiClient.deleteBook(bookId);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Книга удалена')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Книга удалена')));
         await ref.read(booksProvider.notifier).refresh();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
       }
     }
   }
@@ -204,8 +198,9 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.book?.name ?? '');
-    _descriptionController =
-        TextEditingController(text: widget.book?.description ?? '');
+    _descriptionController = TextEditingController(
+      text: widget.book?.description ?? '',
+    );
     _isActive = widget.book?.isActive ?? true;
     _selectedThemeId = widget.book?.themeId;
     _selectedAuthorId = widget.book?.authorId;
@@ -278,8 +273,8 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                   value: themesState.isLoading
                       ? null
                       : (themesState.themes.any((t) => t.id == _selectedThemeId)
-                          ? _selectedThemeId
-                          : null),
+                            ? _selectedThemeId
+                            : null),
                   decoration: const InputDecoration(
                     labelText: 'Тема',
                     border: OutlineInputBorder(),
@@ -308,9 +303,11 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                 DropdownButtonFormField<int>(
                   value: authorsState.isLoading
                       ? null
-                      : (authorsState.authors.any((a) => a.id == _selectedAuthorId)
-                          ? _selectedAuthorId
-                          : null),
+                      : (authorsState.authors.any(
+                              (a) => a.id == _selectedAuthorId,
+                            )
+                            ? _selectedAuthorId
+                            : null),
                   decoration: const InputDecoration(
                     labelText: 'Автор',
                     border: OutlineInputBorder(),
@@ -404,15 +401,17 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.book != null ? 'Книга обновлена' : 'Книга создана'),
+            content: Text(
+              widget.book != null ? 'Книга обновлена' : 'Книга создана',
+            ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
       }
     } finally {
       if (mounted) {

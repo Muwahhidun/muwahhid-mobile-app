@@ -10,12 +10,12 @@ BookModel _$BookModelFromJson(Map<String, dynamic> json) => BookModel(
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       description: json['description'] as String?,
-      sortOrder: (json['sort_order'] as num).toInt(),
-      isActive: json['is_active'] as bool,
+      sortOrder: (json['sort_order'] as num?)?.toInt(),
+      isActive: json['is_active'] as bool?,
       themeId: (json['theme_id'] as num?)?.toInt(),
       authorId: (json['author_id'] as num?)?.toInt(),
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
       theme: json['theme'] == null
           ? null
           : AppThemeModel.fromJson(json['theme'] as Map<String, dynamic>),

@@ -46,7 +46,21 @@ async def get_all_series(db: AsyncSession = Depends(get_db)):
     result = []
     for series in series_list:
         series_dict = {
-            **series.__dict__,
+            "id": series.id,
+            "name": series.name,
+            "year": series.year,
+            "description": series.description,
+            "teacher_id": series.teacher_id,
+            "book_id": series.book_id,
+            "theme_id": series.theme_id,
+            "is_completed": series.is_completed,
+            "order": series.order,
+            "is_active": series.is_active,
+            "created_at": series.created_at,
+            "updated_at": series.updated_at,
+            "teacher": series.teacher,
+            "book": series.book,
+            "theme": series.theme,
             "display_name": f"{series.year} - {series.name}"
         }
         result.append(LessonSeriesWithRelations(**series_dict))
@@ -72,7 +86,21 @@ async def create_series(
     series = await series_crud.create_series(db, series_data)
 
     return LessonSeriesWithRelations(
-        **series.__dict__,
+        id=series.id,
+        name=series.name,
+        year=series.year,
+        description=series.description,
+        teacher_id=series.teacher_id,
+        book_id=series.book_id,
+        theme_id=series.theme_id,
+        is_completed=series.is_completed,
+        order=series.order,
+        is_active=series.is_active,
+        created_at=series.created_at,
+        updated_at=series.updated_at,
+        teacher=series.teacher,
+        book=series.book,
+        theme=series.theme,
         display_name=f"{series.year} - {series.name}"
     )
 
@@ -103,7 +131,21 @@ async def update_series(
         )
 
     return LessonSeriesWithRelations(
-        **series.__dict__,
+        id=series.id,
+        name=series.name,
+        year=series.year,
+        description=series.description,
+        teacher_id=series.teacher_id,
+        book_id=series.book_id,
+        theme_id=series.theme_id,
+        is_completed=series.is_completed,
+        order=series.order,
+        is_active=series.is_active,
+        created_at=series.created_at,
+        updated_at=series.updated_at,
+        teacher=series.teacher,
+        book=series.book,
+        theme=series.theme,
         display_name=f"{series.year} - {series.name}"
     )
 
@@ -152,7 +194,21 @@ async def get_series(series_id: int, db: AsyncSession = Depends(get_db)):
 
     series = result["series"]
     return LessonSeriesWithCounts(
-        **series.__dict__,
+        id=series.id,
+        name=series.name,
+        year=series.year,
+        description=series.description,
+        teacher_id=series.teacher_id,
+        book_id=series.book_id,
+        theme_id=series.theme_id,
+        is_completed=series.is_completed,
+        order=series.order,
+        is_active=series.is_active,
+        created_at=series.created_at,
+        updated_at=series.updated_at,
+        teacher=series.teacher,
+        book=series.book,
+        theme=series.theme,
         display_name=f"{series.year} - {series.name}",
         lessons_count=result["lessons_count"],
         total_duration=result["total_duration"]

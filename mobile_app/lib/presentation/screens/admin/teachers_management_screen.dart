@@ -70,7 +70,7 @@ class _TeachersManagementScreenState
                                 ],
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Активен: ${teacher.isActive ? "Да" : "Нет"}',
+                                  'Активен: ${(teacher.isActive ?? false) ? "Да" : "Нет"}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],

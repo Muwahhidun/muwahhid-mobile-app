@@ -35,85 +35,84 @@ class _SeriesManagementScreenState
       body: seriesState.isLoading && seriesState.seriesList.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : seriesState.error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Ошибка: ${seriesState.error}'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () =>
-                            ref.read(seriesProvider.notifier).refresh(),
-                        child: const Text('Повторить'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Ошибка: ${seriesState.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () =>
+                        ref.read(seriesProvider.notifier).refresh(),
+                    child: const Text('Повторить'),
                   ),
-                )
-              : seriesState.seriesList.isEmpty
-                  ? const Center(child: Text('Нет серий'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: seriesState.seriesList.length,
-                      itemBuilder: (context, index) {
-                        final series = seriesState.seriesList[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            title: Text(
-                              series.displayName ?? '${series.year} - ${series.name}',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (series.description != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(series.description!),
-                                ],
-                                const SizedBox(height: 4),
-                                if (series.teacher != null)
-                                  Text('Преподаватель: ${series.teacher!.name}'),
-                                if (series.book != null)
-                                  Text('Книга: ${series.book!.name}'),
-                                if (series.theme != null)
-                                  Text('Тема: ${series.theme!.name}'),
-                                Text(
-                                  'Завершена: ${series.isCompleted ? "Да" : "Нет"} | Активна: ${series.isActive ? "Да" : "Нет"}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon:
-                                      const Icon(Icons.edit, color: Colors.blue),
-                                  onPressed: () =>
-                                      _showSeriesDialog(context, series: series),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
-                                  onPressed: () =>
-                                      _confirmDelete(context, series),
-                                ),
-                              ],
-                            ),
-                            isThreeLine: true,
-                          ),
-                        );
-                      },
+                ],
+              ),
+            )
+          : seriesState.seriesList.isEmpty
+          ? const Center(child: Text('Нет серий'))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: seriesState.seriesList.length,
+              itemBuilder: (context, index) {
+                final series = seriesState.seriesList[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    title: Text(
+                      series.displayName ?? '${series.year} - ${series.name}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (series.description != null) ...[
+                          const SizedBox(height: 4),
+                          Text(series.description!),
+                        ],
+                        const SizedBox(height: 4),
+                        if (series.teacher != null)
+                          Text('Преподаватель: ${series.teacher!.name}'),
+                        if (series.book != null)
+                          Text('Книга: ${series.book!.name}'),
+                        if (series.theme != null)
+                          Text('Тема: ${series.theme!.name}'),
+                        // ВРЕМЕННО ЗАКОММЕНТИРОВАНО для отладки
+                        // Text(
+                        //   'Завершена: ${series.isCompleted ? "Да" : "Нет"} | Активна: ${series.isActive ? "Да" : "Нет"}',
+                        //   style: TextStyle(
+                        //     fontSize: 12,
+                        //     color: Colors.grey[600],
+                        //   ),
+                        // ),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () =>
+                              _showSeriesDialog(context, series: series),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _confirmDelete(context, series),
+                        ),
+                      ],
+                    ),
+                    isThreeLine: true,
+                  ),
+                );
+              },
+            ),
     );
   }
 
-  Future<void> _showSeriesDialog(BuildContext context,
-      {SeriesModel? series}) async {
+  Future<void> _showSeriesDialog(
+    BuildContext context, {
+    SeriesModel? series,
+  }) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => SeriesFormDialog(series: series),
@@ -155,16 +154,16 @@ class _SeriesManagementScreenState
       await apiClient.deleteSeries(seriesId);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Серия удалена')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Серия удалена')));
         await ref.read(seriesProvider.notifier).refresh();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
       }
     }
   }
@@ -197,10 +196,15 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.series?.name ?? '');
-    _yearController = TextEditingController(text: widget.series?.year.toString() ?? '');
-    _descriptionController =
-        TextEditingController(text: widget.series?.description ?? '');
-    _orderController = TextEditingController(text: widget.series?.order.toString() ?? '0');
+    _yearController = TextEditingController(
+      text: widget.series?.year.toString() ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.series?.description ?? '',
+    );
+    _orderController = TextEditingController(
+      text: widget.series?.order.toString() ?? '0',
+    );
     _selectedTeacherId = widget.series?.teacherId;
     _selectedBookId = widget.series?.bookId;
     _selectedThemeId = widget.series?.themeId;
@@ -224,7 +228,9 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
     final themesState = ref.watch(themesProvider);
 
     return AlertDialog(
-      title: Text(widget.series == null ? 'Новая серия' : 'Редактировать серию'),
+      title: Text(
+        widget.series == null ? 'Новая серия' : 'Редактировать серию',
+      ),
       content: SizedBox(
         width: 600,
         child: Form(
@@ -310,7 +316,10 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
 
                 // Book dropdown
                 DropdownButtonFormField<int>(
-                  value: _selectedBookId,
+                  value: _selectedBookId != null &&
+                          booksState.books.any((book) => book.id == _selectedBookId)
+                      ? _selectedBookId
+                      : null,
                   decoration: const InputDecoration(
                     labelText: 'Книга (опционально)',
                     border: OutlineInputBorder(),
@@ -325,7 +334,7 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
                         value: book.id,
                         child: Text(book.name),
                       );
-                    }).toList(),
+                    }),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -337,7 +346,10 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
 
                 // Theme dropdown
                 DropdownButtonFormField<int>(
-                  value: _selectedThemeId,
+                  value: _selectedThemeId != null &&
+                          themesState.themes.any((theme) => theme.id == _selectedThemeId)
+                      ? _selectedThemeId
+                      : null,
                   decoration: const InputDecoration(
                     labelText: 'Тема (опционально)',
                     border: OutlineInputBorder(),
@@ -352,7 +364,7 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
                         value: theme.id,
                         child: Text(theme.name),
                       );
-                    }).toList(),
+                    }),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -382,27 +394,28 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
                 ),
                 const SizedBox(height: 16),
 
-                // Is completed switch
-                SwitchListTile(
-                  title: const Text('Серия завершена'),
-                  value: _isCompleted,
-                  onChanged: (value) {
-                    setState(() {
-                      _isCompleted = value;
-                    });
-                  },
-                ),
+                // ВРЕМЕННО ЗАКОММЕНТИРОВАНО для отладки
+                // // Is completed switch
+                // SwitchListTile(
+                //   title: const Text('Серия завершена'),
+                //   value: _isCompleted,
+                //   onChanged: (value) {
+                //     setState(() {
+                //       _isCompleted = value;
+                //     });
+                //   },
+                // ),
 
-                // Is active switch
-                SwitchListTile(
-                  title: const Text('Активна'),
-                  value: _isActive,
-                  onChanged: (value) {
-                    setState(() {
-                      _isActive = value;
-                    });
-                  },
-                ),
+                // // Is active switch
+                // SwitchListTile(
+                //   title: const Text('Активна'),
+                //   value: _isActive,
+                //   onChanged: (value) {
+                //     setState(() {
+                //       _isActive = value;
+                //     });
+                //   },
+                // ),
               ],
             ),
           ),
@@ -429,6 +442,11 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Prevent double submission
+    if (_isLoading) {
       return;
     }
 
@@ -466,15 +484,16 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                widget.series != null ? 'Серия обновлена' : 'Серия создана'),
+              widget.series != null ? 'Серия обновлена' : 'Серия создана',
+            ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
       }
     } finally {
       if (mounted) {

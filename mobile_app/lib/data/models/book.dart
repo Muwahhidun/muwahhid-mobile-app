@@ -11,17 +11,17 @@ class BookModel {
   final String name;
   final String? description;
   @JsonKey(name: 'sort_order')
-  final int sortOrder;
+  final int? sortOrder;
   @JsonKey(name: 'is_active')
-  final bool isActive;
+  final bool? isActive;
   @JsonKey(name: 'theme_id')
   final int? themeId;
   @JsonKey(name: 'author_id')
   final int? authorId;
   @JsonKey(name: 'created_at')
-  final String createdAt;
+  final String? createdAt;
   @JsonKey(name: 'updated_at')
-  final String updatedAt;
+  final String? updatedAt;
 
   // Relations
   final AppThemeModel? theme;
@@ -31,12 +31,12 @@ class BookModel {
     required this.id,
     required this.name,
     this.description,
-    required this.sortOrder,
-    required this.isActive,
+    this.sortOrder,
+    this.isActive,
     this.themeId,
     this.authorId,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
     this.theme,
     this.author,
   });

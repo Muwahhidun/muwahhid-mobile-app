@@ -17,11 +17,11 @@ class SeriesModel {
   final int? bookId;
   @JsonKey(name: 'theme_id')
   final int? themeId;
-  @JsonKey(name: 'is_completed', defaultValue: false)
-  final bool isCompleted;
+  @JsonKey(name: 'is_completed')
+  final bool? isCompleted;
   final int order;
-  @JsonKey(name: 'is_active', defaultValue: true)
-  final bool isActive;
+  @JsonKey(name: 'is_active')
+  final bool? isActive;
   @JsonKey(name: 'created_at')
   final String createdAt;
   @JsonKey(name: 'updated_at')
@@ -41,9 +41,9 @@ class SeriesModel {
     required this.teacherId,
     this.bookId,
     this.themeId,
-    required this.isCompleted,
+    this.isCompleted,
     required this.order,
-    required this.isActive,
+    this.isActive,
     required this.createdAt,
     required this.updatedAt,
     this.teacher,

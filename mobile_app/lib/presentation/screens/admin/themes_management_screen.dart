@@ -68,7 +68,7 @@ class _ThemesManagementScreenState
                                 ],
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Активна: ${theme.isActive ? "Да" : "Нет"}',
+                                  'Активна: ${(theme.isActive ?? false) ? "Да" : "Нет"}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],
