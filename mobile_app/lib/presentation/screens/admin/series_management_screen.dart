@@ -550,6 +550,15 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
                   onChanged: (value) {
                     setState(() {
                       _selectedBookId = value;
+
+                      // Если выбрана книга, автоматически установить её тему
+                      if (value != null) {
+                        final selectedBook = booksState.books.firstWhere(
+                          (book) => book.id == value,
+                        );
+                        _selectedThemeId = selectedBook.themeId;
+                      }
+                      // Если "Не выбрано", тема остается как есть (можно выбрать вручную)
                     });
                   },
                 ),
@@ -561,9 +570,14 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
                           themesState.themes.any((theme) => theme.id == _selectedThemeId)
                       ? _selectedThemeId
                       : null,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Тема (опционально)',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    // Показываем подсказку если тема берется из книги
+                    helperText: _selectedBookId != null
+                        ? 'Тема автоматически берётся из книги'
+                        : null,
+                    helperStyle: const TextStyle(color: Colors.blue),
                   ),
                   items: [
                     const DropdownMenuItem<int>(
@@ -577,11 +591,27 @@ class _SeriesFormDialogState extends ConsumerState<SeriesFormDialog> {
                       );
                     }),
                   ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedThemeId = value;
-                    });
-                  },
+                  // Если выбрана книга - dropdown неактивен (серый)
+                  onChanged: _selectedBookId != null
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _selectedThemeId = value;
+                          });
+                        },
+                  // Серый цвет когда disabled
+                  disabledHint: _selectedThemeId != null &&
+                          themesState.themes.any((theme) => theme.id == _selectedThemeId)
+                      ? Text(
+                          themesState.themes
+                              .firstWhere((theme) => theme.id == _selectedThemeId)
+                              .name,
+                          style: const TextStyle(color: Colors.grey),
+                        )
+                      : const Text(
+                          'Не выбрано',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                 ),
                 const SizedBox(height: 16),
 

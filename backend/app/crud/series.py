@@ -87,7 +87,17 @@ async def create_series(db: AsyncSession, series_data: LessonSeriesCreate) -> Le
     Returns:
         Created LessonSeries object
     """
-    series = LessonSeries(**series_data.model_dump())
+    series_dict = series_data.model_dump()
+
+    # Если выбрана книга, автоматически установить theme_id из книги
+    if series_dict.get('book_id'):
+        from app.models import Book
+        book_result = await db.execute(select(Book).where(Book.id == series_dict['book_id']))
+        book = book_result.scalar_one_or_none()
+        if book and book.theme_id:
+            series_dict['theme_id'] = book.theme_id
+
+    series = LessonSeries(**series_dict)
     db.add(series)
     await db.commit()
     await db.refresh(series)
@@ -129,6 +139,17 @@ async def update_series(
 
     # Update only provided fields
     update_data = series_data.model_dump(exclude_unset=True)
+
+    # Если изменяется book_id, автоматически обновить theme_id из книги
+    if 'book_id' in update_data:
+        if update_data['book_id']:
+            from app.models import Book
+            book_result = await db.execute(select(Book).where(Book.id == update_data['book_id']))
+            book = book_result.scalar_one_or_none()
+            if book and book.theme_id:
+                update_data['theme_id'] = book.theme_id
+        # Если book_id стал null, theme_id остается как есть (можно выбрать вручную)
+
     for field, value in update_data.items():
         setattr(series, field, value)
 
