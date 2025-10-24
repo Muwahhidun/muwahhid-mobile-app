@@ -1,0 +1,196 @@
+"""
+Series API endpoints.
+"""
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.api.auth import get_current_user
+from app.models import User
+from app.schemas.lesson import (
+    LessonSeriesWithCounts,
+    LessonSeriesWithRelations,
+    LessonSeriesCreate,
+    LessonSeriesUpdate,
+    LessonListItem
+)
+from app.crud import teacher as teacher_crud
+from app.crud import lesson as lesson_crud
+from app.crud import series as series_crud
+
+router = APIRouter(prefix="/series", tags=["Series"])
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Require admin role."""
+    if current_user.role.level < 2:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
+
+@router.get("", response_model=List[LessonSeriesWithRelations])
+async def get_all_series(db: AsyncSession = Depends(get_db)):
+    """
+    Get all active series with relationships.
+
+    Returns:
+        List of series ordered by year (newest first) and order
+    """
+    series_list = await series_crud.get_all_series(db)
+
+    # Add display_name to each series
+    result = []
+    for series in series_list:
+        series_dict = {
+            **series.__dict__,
+            "display_name": f"{series.year} - {series.name}"
+        }
+        result.append(LessonSeriesWithRelations(**series_dict))
+
+    return result
+
+
+@router.post("", response_model=LessonSeriesWithRelations, status_code=status.HTTP_201_CREATED)
+async def create_series(
+    series_data: LessonSeriesCreate,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Create a new series (admin only).
+
+    Args:
+        series_data: Series creation data
+
+    Returns:
+        Created series object with relationships
+    """
+    series = await series_crud.create_series(db, series_data)
+
+    return LessonSeriesWithRelations(
+        **series.__dict__,
+        display_name=f"{series.year} - {series.name}"
+    )
+
+
+@router.put("/{series_id}", response_model=LessonSeriesWithRelations)
+async def update_series(
+    series_id: int,
+    series_data: LessonSeriesUpdate,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Update a series (admin only).
+
+    Args:
+        series_id: Series ID
+        series_data: Series update data
+
+    Returns:
+        Updated series object with relationships
+    """
+    series = await series_crud.update_series(db, series_id, series_data)
+
+    if not series:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Series not found"
+        )
+
+    return LessonSeriesWithRelations(
+        **series.__dict__,
+        display_name=f"{series.year} - {series.name}"
+    )
+
+
+@router.delete("/{series_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_series(
+    series_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Delete a series (soft delete, admin only).
+
+    Args:
+        series_id: Series ID
+    """
+    success = await series_crud.delete_series(db, series_id)
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Series not found"
+        )
+
+    return None
+
+
+@router.get("/{series_id}", response_model=LessonSeriesWithCounts)
+async def get_series(series_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Get series by ID with stats.
+
+    Args:
+        series_id: Series ID
+
+    Returns:
+        Series object with lessons count and total duration
+    """
+    result = await teacher_crud.get_series_with_stats(db, series_id)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Series not found"
+        )
+
+    series = result["series"]
+    return LessonSeriesWithCounts(
+        **series.__dict__,
+        display_name=f"{series.year} - {series.name}",
+        lessons_count=result["lessons_count"],
+        total_duration=result["total_duration"]
+    )
+
+
+@router.get("/{series_id}/lessons", response_model=List[LessonListItem])
+async def get_series_lessons(series_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Get all lessons in a series.
+
+    Args:
+        series_id: Series ID
+
+    Returns:
+        List of lessons ordered by lesson_number
+    """
+    # Check if series exists
+    series = await teacher_crud.get_series_by_id(db, series_id)
+    if not series:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Series not found"
+        )
+
+    # Get lessons
+    lessons = await teacher_crud.get_series_lessons(db, series_id)
+
+    # Format lessons for response
+    result = []
+    for lsn in lessons:
+        result.append(LessonListItem(
+            id=lsn.id,
+            lesson_number=lsn.lesson_number,
+            display_title=lesson_crud.get_display_title(lsn),
+            duration_seconds=lsn.duration_seconds,
+            formatted_duration=lesson_crud.format_duration(lsn.duration_seconds),
+            audio_url=lesson_crud.get_audio_url(lsn.id)
+        ))
+
+    return result

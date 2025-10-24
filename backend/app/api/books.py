@@ -1,0 +1,127 @@
+"""
+Books API endpoints.
+"""
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.schemas.content import BookResponse, BookWithRelations, BookCreate, BookUpdate
+from app.crud import book as book_crud
+from app.api.auth import get_current_user
+from app.models import User
+
+router = APIRouter(prefix="/books", tags=["Books"])
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Require admin role."""
+    if current_user.role.level < 2:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
+
+@router.get("", response_model=List[BookWithRelations])
+async def get_books(db: AsyncSession = Depends(get_db)):
+    """
+    Get all active books with theme and author info.
+
+    Returns list of books ordered by sort_order.
+    """
+    books = await book_crud.get_all_books(db)
+    return books
+
+
+@router.get("/{book_id}", response_model=BookWithRelations)
+async def get_book(book_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Get book by ID with theme and author info.
+
+    Args:
+        book_id: Book ID
+
+    Returns:
+        Book object with relations
+    """
+    book = await book_crud.get_book_by_id(db, book_id)
+
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
+
+    return book
+
+
+@router.post("", response_model=BookWithRelations, status_code=status.HTTP_201_CREATED)
+async def create_book(
+    book_data: BookCreate,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Create a new book (Admin only).
+
+    Args:
+        book_data: Book creation data
+
+    Returns:
+        Created book object
+    """
+    book = await book_crud.create_book(db, book_data)
+    return book
+
+
+@router.put("/{book_id}", response_model=BookWithRelations)
+async def update_book(
+    book_id: int,
+    book_data: BookUpdate,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Update book (Admin only).
+
+    Args:
+        book_id: Book ID
+        book_data: Book update data
+
+    Returns:
+        Updated book object
+    """
+    book = await book_crud.update_book(db, book_id, book_data)
+
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
+
+    return book
+
+
+@router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_book(
+    book_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Delete book (Admin only).
+
+    Performs soft delete by setting is_active=False.
+
+    Args:
+        book_id: Book ID
+    """
+    deleted = await book_crud.delete_book(db, book_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
