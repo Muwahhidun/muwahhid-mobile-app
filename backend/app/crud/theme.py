@@ -3,28 +3,38 @@ CRUD operations for Theme model.
 """
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.orm import selectinload
 
 from app.models import Theme, Book, LessonSeries
 from app.schemas.content import ThemeCreate, ThemeUpdate
 
 
-async def get_all_themes(db: AsyncSession) -> List[Theme]:
+async def get_all_themes(db: AsyncSession, search: Optional[str] = None) -> List[Theme]:
     """
-    Get all active themes.
+    Get all active themes with optional search.
 
     Args:
         db: Database session
+        search: Search query for name or description (case-insensitive)
 
     Returns:
         List of Theme objects
     """
-    result = await db.execute(
-        select(Theme)
-        .where(Theme.is_active == True)
-        .order_by(Theme.sort_order, Theme.name)
-    )
+    query = select(Theme).where(Theme.is_active == True)
+
+    # Add search filter if provided
+    if search:
+        search_term = f"%{search}%"
+        query = query.where(
+            or_(
+                Theme.name.ilike(search_term),
+                Theme.description.ilike(search_term)
+            )
+        )
+
+    query = query.order_by(Theme.sort_order, Theme.name)
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 

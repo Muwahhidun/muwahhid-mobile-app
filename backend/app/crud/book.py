@@ -3,29 +3,57 @@ CRUD operations for Book model.
 """
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 
 from app.models import Book
 from app.schemas.content import BookCreate, BookUpdate
 
 
-async def get_all_books(db: AsyncSession) -> List[Book]:
+async def get_all_books(
+    db: AsyncSession,
+    search: Optional[str] = None,
+    theme_id: Optional[int] = None,
+    author_id: Optional[int] = None
+) -> List[Book]:
     """
-    Get all active books with relations.
+    Get all active books with optional search and filters.
 
     Args:
         db: Database session
+        search: Search query for name or description (case-insensitive)
+        theme_id: Filter by theme ID
+        author_id: Filter by author ID
 
     Returns:
         List of Book objects
     """
-    result = await db.execute(
+    query = (
         select(Book)
         .where(Book.is_active == True)
         .options(selectinload(Book.theme), selectinload(Book.author))
-        .order_by(Book.sort_order, Book.name)
     )
+
+    # Add search filter if provided
+    if search:
+        search_term = f"%{search}%"
+        query = query.where(
+            or_(
+                Book.name.ilike(search_term),
+                Book.description.ilike(search_term)
+            )
+        )
+
+    # Add theme filter if provided
+    if theme_id is not None:
+        query = query.where(Book.theme_id == theme_id)
+
+    # Add author filter if provided
+    if author_id is not None:
+        query = query.where(Book.author_id == author_id)
+
+    query = query.order_by(Book.sort_order, Book.name)
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 

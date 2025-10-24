@@ -26,7 +26,9 @@ abstract class ApiClient {
 
   // Themes endpoints
   @GET('/themes')
-  Future<List<AppThemeModel>> getThemes();
+  Future<List<AppThemeModel>> getThemes({
+    @Query('search') String? search,
+  });
 
   @GET('/themes/{id}')
   Future<AppThemeModel> getTheme(@Path('id') int id);
@@ -45,7 +47,11 @@ abstract class ApiClient {
 
   // Books endpoints
   @GET('/books')
-  Future<List<BookModel>> getBooks();
+  Future<List<BookModel>> getBooks({
+    @Query('search') String? search,
+    @Query('theme_id') int? themeId,
+    @Query('author_id') int? authorId,
+  });
 
   @GET('/books/{id}')
   Future<BookModel> getBook(@Path('id') int id);

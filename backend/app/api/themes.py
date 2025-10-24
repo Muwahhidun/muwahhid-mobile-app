@@ -1,8 +1,8 @@
 """
 Themes API endpoints.
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -25,13 +25,19 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
 
 
 @router.get("", response_model=List[ThemeResponse])
-async def get_themes(db: AsyncSession = Depends(get_db)):
+async def get_themes(
+    search: Optional[str] = Query(None, description="Search by name or description"),
+    db: AsyncSession = Depends(get_db)
+):
     """
-    Get all active themes.
+    Get all active themes with optional search.
+
+    Args:
+        search: Search query for name or description (case-insensitive)
 
     Returns list of themes ordered by sort_order.
     """
-    themes = await theme_crud.get_all_themes(db)
+    themes = await theme_crud.get_all_themes(db, search=search)
     return themes
 
 

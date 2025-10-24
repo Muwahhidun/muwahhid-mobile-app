@@ -1,8 +1,8 @@
 """
 Books API endpoints.
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -25,13 +25,28 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
 
 
 @router.get("", response_model=List[BookWithRelations])
-async def get_books(db: AsyncSession = Depends(get_db)):
+async def get_books(
+    search: Optional[str] = Query(None, description="Search by name or description"),
+    theme_id: Optional[int] = Query(None, description="Filter by theme ID"),
+    author_id: Optional[int] = Query(None, description="Filter by author ID"),
+    db: AsyncSession = Depends(get_db)
+):
     """
-    Get all active books with theme and author info.
+    Get all active books with optional search and filters.
+
+    Args:
+        search: Search query for name or description (case-insensitive)
+        theme_id: Filter by theme ID
+        author_id: Filter by author ID
 
     Returns list of books ordered by sort_order.
     """
-    books = await book_crud.get_all_books(db)
+    books = await book_crud.get_all_books(
+        db,
+        search=search,
+        theme_id=theme_id,
+        author_id=author_id
+    )
     return books
 
 
