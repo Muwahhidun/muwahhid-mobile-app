@@ -34,16 +34,17 @@ class BookAuthorsState {
     int? birthYearTo,
     int? deathYearFrom,
     int? deathYearTo,
+    bool clearFilters = false,
   }) {
     return BookAuthorsState(
       authors: authors ?? this.authors,
       isLoading: isLoading ?? this.isLoading,
       error: error,
-      searchQuery: searchQuery ?? this.searchQuery,
-      birthYearFrom: birthYearFrom ?? this.birthYearFrom,
-      birthYearTo: birthYearTo ?? this.birthYearTo,
-      deathYearFrom: deathYearFrom ?? this.deathYearFrom,
-      deathYearTo: deathYearTo ?? this.deathYearTo,
+      searchQuery: clearFilters ? null : (searchQuery ?? this.searchQuery),
+      birthYearFrom: clearFilters ? null : (birthYearFrom ?? this.birthYearFrom),
+      birthYearTo: clearFilters ? null : (birthYearTo ?? this.birthYearTo),
+      deathYearFrom: clearFilters ? null : (deathYearFrom ?? this.deathYearFrom),
+      deathYearTo: clearFilters ? null : (deathYearTo ?? this.deathYearTo),
     );
   }
 }
@@ -63,6 +64,7 @@ class BookAuthorsNotifier extends StateNotifier<BookAuthorsState> {
     int? birthYearTo,
     int? deathYearFrom,
     int? deathYearTo,
+    bool clearFilters = false,
   }) async {
     try {
       state = state.copyWith(
@@ -73,6 +75,7 @@ class BookAuthorsNotifier extends StateNotifier<BookAuthorsState> {
         birthYearTo: birthYearTo,
         deathYearFrom: deathYearFrom,
         deathYearTo: deathYearTo,
+        clearFilters: clearFilters,
       );
 
       final authors = await _apiClient.getBookAuthors(
@@ -130,7 +133,7 @@ class BookAuthorsNotifier extends StateNotifier<BookAuthorsState> {
 
   /// Clear all filters
   Future<void> clearFilters() async {
-    await loadAuthors();
+    await loadAuthors(clearFilters: true);
   }
 
   /// Refresh authors with current filters
