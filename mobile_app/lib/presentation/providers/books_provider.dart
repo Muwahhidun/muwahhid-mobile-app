@@ -28,16 +28,15 @@ class BooksState {
     String? searchQuery,
     int? themeFilter,
     int? authorFilter,
-    bool clearThemeFilter = false,
-    bool clearAuthorFilter = false,
+    bool clearFilters = false,
   }) {
     return BooksState(
       books: books ?? this.books,
       isLoading: isLoading ?? this.isLoading,
       error: error,
-      searchQuery: searchQuery ?? this.searchQuery,
-      themeFilter: clearThemeFilter ? null : (themeFilter ?? this.themeFilter),
-      authorFilter: clearAuthorFilter ? null : (authorFilter ?? this.authorFilter),
+      searchQuery: clearFilters ? null : (searchQuery ?? this.searchQuery),
+      themeFilter: clearFilters ? null : (themeFilter ?? this.themeFilter),
+      authorFilter: clearFilters ? null : (authorFilter ?? this.authorFilter),
     );
   }
 }
@@ -55,6 +54,7 @@ class BooksNotifier extends StateNotifier<BooksState> {
     String? search,
     int? themeId,
     int? authorId,
+    bool clearFilters = false,
   }) async {
     try {
       state = state.copyWith(
@@ -63,6 +63,7 @@ class BooksNotifier extends StateNotifier<BooksState> {
         searchQuery: search,
         themeFilter: themeId,
         authorFilter: authorId,
+        clearFilters: clearFilters,
       );
       final books = await _apiClient.getBooks(
         search: search,
@@ -110,7 +111,7 @@ class BooksNotifier extends StateNotifier<BooksState> {
 
   /// Clear all filters and search
   Future<void> clearFilters() async {
-    await loadBooks();
+    await loadBooks(clearFilters: true);
   }
 
   /// Refresh books with current filters
